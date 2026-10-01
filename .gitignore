@@ -1,0 +1,27 @@
+# Environments & Secrets
+.env
+.env*.local
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Output directories & Uploads
+uploads/
+outputs/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+*.bak
+*.swp
+*.tmp

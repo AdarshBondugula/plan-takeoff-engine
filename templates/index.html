@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Takeoff Pro | Architectural Blueprint & Estimation Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/app.js?v=50" defer></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-accent">AI</span>
+                <span class="logo-text">TAKEOFF PRO</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="upload-new-header-btn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px; border-color: #38bdf8; color: #38bdf8;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" class="btn-svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Upload New Drawing
+                </button>
+                <div class="badge">
+                    <span class="badge-dot"></span>
+                    Blueprint to Markdown & Takeoff Engine
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body -->
+        <main class="main-content">
+            <!-- Upload Panel -->
+            <section id="upload-section" class="card glassmorphic">
+                <div class="card-header">
+                    <h2>Convert Drawing PDF</h2>
+                    <p class="subtitle">Upload multi-page architectural drawings to extract structured JSON metadata &
+                        run commercial quantity takeoffs.</p>
+                </div>
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <h3>Drag & drop architectural PDF here</h3>
+                        <p>or click to browse files</p>
+                        <span class="file-format-badge">Multi-page PDF supported</span>
+                    </div>
+                    <input type="file" id="file-input" accept="application/pdf" hidden>
+                </div>
+            </section>
+
+            <!-- Progress Tracker Panel (Hidden initially) -->
+            <section id="progress-section" class="card glassmorphic hidden">
+                <div class="card-header">
+                    <h2>Converting Document...</h2>
+                    <p class="subtitle" id="progress-filename">File: drawing.pdf</p>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    <span id="progress-percent" class="progress-percent">0%</span>
+                </div>
+                <div class="logs-container">
+                    <div class="logs-header">
+                        <h4>Conversion Logs</h4>
+                        <span class="spinner"></span>
+                    </div>
+                    <div id="logs-box" class="logs-box">
+                        <!-- Logs appended here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Side-by-Side Results Workspace (Hidden initially) -->
+            <section id="workspace-section" class="workspace hidden">
+                <!-- Left Pane: Blueprint Viewer -->
+                <div class="pane card glassmorphic">
+                    <div class="pane-header">
+                        <h3>Original Blueprint Page</h3>
+                        <div class="page-controls">
+                            <button id="prev-page" class="btn btn-secondary btn-icon" title="Previous Page">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <span id="page-indicator">Page 1</span>
+                            <button id="next-page" class="btn btn-secondary btn-icon" title="Next Page">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pane-body center-content" style="position: relative; width: 100%; min-height: 480px;">
+                        <div class="blueprint-canvas-container" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: auto;">
+                            <img id="blueprint-image" alt="Blueprint Drawing" style="max-width: 100%; height: auto; max-height: 75vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Pane: Material Takeoff & LLM Response Output -->
+                <div class="pane card glassmorphic">
+                    <div class="pane-header">
+                        <h3 style="display: flex; align-items: center; gap: 8px; color: #38bdf8;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" width="20" height="20" style="color: #38bdf8;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                            </svg>
+                            Visual Material Takeoff & Estimation
+                        </h3>
+                        <div class="action-buttons" style="display: flex; gap: 8px;">
+                            <button id="back-to-upload-btn" class="btn btn-secondary" title="Upload another architectural drawing">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" width="16" height="16" class="btn-svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                Upload Another Doc
+                            </button>
+                            <button id="download-json-btn" class="btn btn-secondary" style="display: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" width="16" height="16" class="btn-svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download Takeoff JSON
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pane-body">
+                        <!-- Takeoff Section -->
+                        <div class="takeoff-section" style="padding-top: 5px;">
+                            <!-- Project Description Input -->
+                            <div style="margin-bottom: 15px;">
+                                <label
+                                    style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px;">
+                                    Project Description / Scope of Work
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="project-desc-input"
+                                        placeholder="e.g. measure the drain for this project, exterior foundation waterproofing, etc."
+                                        style="flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;"
+                                        onfocus="this.style.borderColor='#38bdf8'"
+                                        onblur="this.style.borderColor='#475569'">
+                                    <button id="identify-btn" onclick="runIdentifyMaterial()" class="btn btn-secondary"
+                                        style="padding: 10px 18px; font-weight: 500; font-size: 13px; white-space: nowrap;">
+                                        Identify Material
+                                    </button>
+                                </div>
+                                <div id="identify-status"
+                                    style="font-size: 12px; color: #38bdf8; margin-top: 6px; display: none;"></div>
+                            </div>
+
+                            <!-- Identified Material to be Measured Field -->
+                            <div style="margin-bottom: 15px;">
+                                <label
+                                    style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px;">
+                                    Material to be Measured (Populated or Type / Copy Paste)
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="takeoff-input"
+                                        placeholder="Target material (e.g. Membrane de drainage DELTA-MS)"
+                                        style="flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;"
+                                        onfocus="this.style.borderColor='#38bdf8'"
+                                        onblur="this.style.borderColor='#475569'">
+                                    <button id="takeoff-btn" class="btn btn-primary"
+                                        style="padding: 10px 20px; font-weight: 500; font-size: 14px; white-space: nowrap;">Run
+                                        Takeoff</button>
+                                </div>
+                            </div>
+
+                            <!-- Quick Select Material Pills — populated dynamically from KB -->
+                            <div id="material-pills" class="material-pills"
+                                style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px;">
+                                <!-- Pills loaded by app.js from /kb-materials -->
+                            </div>
+
+                            <div id="takeoff-results" class="takeoff-results" style="display: none;">
+                                <!-- Takeoff results & LLM JSON rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>AI Takeoff Pro &copy; 2026. Architectural Blueprint & Estimation Engine.</p>
+        </footer>
+    </div>
+
+    <style>
+        .pill-btn {
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1px solid #334155;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pill-btn:hover {
+            background: #38bdf8;
+            color: #0f172a;
+            border-color: #38bdf8;
+        }
+    </style>
+</body>
+
+</html>

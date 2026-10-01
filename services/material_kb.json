@@ -1,0 +1,205 @@
+{
+  "rc_30": {
+    "standard_name": "Revetement RC.30 (10 Mils)",
+    "synonyms": [
+      "rc.30",
+      "rc30",
+      "rc.30 10 mils",
+      "10 mils membrane",
+      "pare-vapeur fondation",
+      "hydrofuge",
+      "enduit bitumineux",
+      "bituminous damp-proofing"
+    ],
+    "category": "Murs Fondation (vertical) / Hydrofuge",
+    "description": "10 Mils thick protective layer, damp-proofing coating, or bituminous coating applied over the full foundation wall height from subfloor ledge to footing bottom.",
+    "takeoff_unit": "Pi Carree (sq.ft) / m2",
+    "requires_perimeter": true,
+    "requires_depth": true,
+    "vertical_dimension_target": "full_foundation_height",
+    "default_waste_percent": 10,
+    "common_contexts": [
+      "Damp-proofing",
+      "Hydrofuge",
+      "Enduit bitumineux",
+      "Sous la dalle",
+      "Foundation coating",
+      "Murs Fondation"
+    ],
+    "excludes": [
+      "Open concrete slabs (Perron beton / dalle sur grade)",
+      "Unheated porches on piers or posts (Poteaux)",
+      "Exterior stairs (Escaliers exterieurs)",
+      "Roof overhangs and soffits (Debord de toit / Corniche)",
+      "Deck posts and cantilevered balconies without a full-height backfilled foundation wall"
+    ],
+    "takeoff_guidelines": [
+      "ALWAYS MEASURE OVERALL EXTERIOR BUILDING FOOTPRINT MASS: full overall building exterior dimensions enclosing all units combined extracted directly from drawing dimension callouts.",
+      "CALCULATE USING FULL FOUNDATION HEIGHT: measure total vertical height of poured concrete foundation wall down to the footing base (e.g. wall height + footing thickness).",
+      "REJECT INTERIOR ROOM AND UNIT PARTITIONS: strictly ignore individual interior room or unit partition dimensions. Never use single-room sizes as building perimeter.",
+      "EXCLUSION CHECKLIST: exclude open concrete slabs (Perron béton), unheated porches on posts/piers (Poteaux), exterior stairs, and deck posts outside the moisture envelope.",
+      "CALCULATION: Area (SQ FT) = perimeter_linear_feet * full_foundation_height."
+    ]
+  },
+  "delta_ms": {
+    "standard_name": "Membrane de drainage DELTA-MS",
+    "synonyms": [
+      "delta-ms",
+      "delta ms",
+      "deta ms",
+      "membrane de drainage",
+      "membrane de fondation",
+      "membrane gaufree",
+      "drainage membrane",
+      "dimpled drainage board",
+      "hydrofuge fondation",
+      "panneau drainant",
+      "membrane etancheite"
+    ],
+    "category": "Murs Fondation (vertical) / Hydrofuge",
+    "description": "Dimpled plastic drainage membrane applied to exterior backfilled foundation walls below grade from finished grade line to footing base.",
+    "takeoff_unit": "Pi Carree (sq.ft) / m2",
+    "requires_perimeter": true,
+    "requires_depth": true,
+    "vertical_dimension_target": "below_grade_depth",
+    "default_waste_percent": 10,
+    "common_contexts": [
+      "Foundation walls",
+      "Sous-sol",
+      "Below grade waterproofing",
+      "Murs Fondation",
+      "Membrane de drainage"
+    ],
+    "excludes": [
+      "Open concrete slabs (Perron beton / dalle sur grade / slab-on-grade)",
+      "Unheated porches on piers or posts (Poteaux) or slab-on-grade",
+      "Exterior stairs (Escaliers exterieurs)",
+      "Roof or soffit overhangs (Debord de toit / Corniche / gallery soffit)",
+      "Deck posts or wood decks (Poteaux de terrasse)",
+      "Cantilevered balconies without a full-height below-grade foundation wall"
+    ],
+    "takeoff_guidelines": [
+      "ALWAYS MEASURE OVERALL EXTERIOR BUILDING FOOTPRINT MASS: full overall building exterior dimensions enclosing all units combined extracted directly from drawing dimension callouts.",
+      "CALCULATE USING BELOW-GRADE DEPTH: vertical distance from finished grade (Sol / terrain fini) to the footing top/base.",
+      "REJECT INTERIOR ROOM AND UNIT PARTITIONS: strictly ignore individual interior room or unit partition dimensions. Never use single-room sizes as building perimeter.",
+      "EXCLUSION CHECKLIST: exclude open concrete slabs (Perron béton), unheated porches on posts/piers (Poteaux), exterior stairs, and deck posts outside the moisture envelope.",
+      "CALCULATION: Area (SQ FT) = perimeter_linear_feet * below_grade_depth."
+    ]
+  },
+  "delta_flash": {
+    "standard_name": "Profile de finition Delta-Flash",
+    "synonyms": [
+      "deltaflash",
+      "delta flash",
+      "delta-flash",
+      "pi lin",
+      "linear feet flash",
+      "profile de finition",
+      "bande de finition",
+      "solin delta",
+      "termination profile"
+    ],
+    "category": "Murs Fondation (vertical) / Hydrofuge",
+    "description": "Termination bar or capping profile used to secure the top edge of the Delta-MS membrane along the perimeter of the foundation wall.",
+    "takeoff_unit": "Pi Lin (lin.ft) / m",
+    "requires_perimeter": true,
+    "requires_depth": false,
+    "vertical_dimension_target": "none",
+    "default_waste_percent": 5,
+    "common_contexts": [
+      "Top edge of foundation membrane",
+      "Finition superieure",
+      "Solin",
+      "Termination profile"
+    ],
+    "excludes": [
+      "Open concrete slabs (Perron beton / dalle sur grade)",
+      "Unheated porches on piers or posts (Poteaux)",
+      "Exterior stairs (Escaliers exterieurs)",
+      "Roof overhangs and soffits (Debord de toit)",
+      "Deck posts and cantilevered balconies without a full-height backfilled foundation wall"
+    ],
+    "takeoff_guidelines": [
+      "ALWAYS MEASURE OVERALL EXTERIOR BUILDING FOOTPRINT MASS: full overall building exterior dimensions enclosing all units combined extracted directly from drawing dimension callouts.",
+      "CALCULATE AS LINEAR LENGTH: Length (LF) = perimeter_linear_feet with specified waste factor (default 5%).",
+      "REJECT INTERIOR ROOM AND UNIT PARTITIONS: strictly ignore individual interior room or unit partition dimensions. Never use single-room sizes as building perimeter.",
+      "EXCLUSION CHECKLIST: exclude open concrete slabs (Perron béton), unheated porches on posts/piers (Poteaux), exterior stairs, and deck posts outside the moisture envelope."
+    ]
+  },
+  "geotextile_drain": {
+    "standard_name": "Membrane Geotextile pour Drain Francais",
+    "synonyms": [
+      "geotextile",
+      "geotextile membrane",
+      "membrane geotextile",
+      "drain francais",
+      "french drain geotextile",
+      "french drain",
+      "filter fabric",
+      "enveloppe drainante",
+      "textile non tisse",
+      "drainage geotextile"
+    ],
+    "category": "Drainage Fondations / Geotextile",
+    "description": "Non-woven filter fabric wrapped around the perforated French drain pipe and crushed stone envelope along the foundation perimeter.",
+    "takeoff_unit": "Pi Carree (sq.ft) / m2",
+    "requires_perimeter": true,
+    "requires_depth": true,
+    "vertical_dimension_target": "geotextile_drain_girth",
+    "default_waste_percent": 10,
+    "common_contexts": [
+      "French drain",
+      "Drain francais",
+      "Pierre cassee",
+      "Pierre concassee",
+      "Enveloppe geotextile",
+      "Footing drain",
+      "Geotextile wrap"
+    ],
+    "excludes": [
+      "Open concrete slabs without French drains",
+      "Interior drainage systems unless specified on foundation detail"
+    ],
+    "takeoff_guidelines": [
+      "ALWAYS MEASURE OVERALL EXTERIOR FOUNDATION FOOTPRINT PERIMETER for the continuous drain run.",
+      "READ FRENCH DRAIN DETAIL SECTION on typical section sheets (e.g. A401, A501) to dynamically calculate geotextile wrap girth around the crushed stone envelope.",
+      "CALCULATION: Area (SQ FT) = perimeter_linear_feet * geotextile_drain_girth."
+    ]
+  },
+  "izodrain": {
+    "standard_name": "Panneau isolant et drainant IZODRAIN THD 30 3.5 pouces (R15)",
+    "synonyms": [
+      "izodrain",
+      "izodrain thd 30",
+      "izodrain r15",
+      "avec rainure",
+      "grooved insulation",
+      "isolant rigide drainant"
+    ],
+    "category": "Murs Fondation (vertical) / Isolation",
+    "description": "High-density molded EPS insulation panel with drainage grooves. 3.5 inches thick providing R15 thermal resistance.",
+    "takeoff_unit": "Pi Carree (sq.ft) / m2",
+    "requires_perimeter": true,
+    "requires_depth": true,
+    "vertical_dimension_target": "below_grade_depth",
+    "default_waste_percent": 2,
+    "common_contexts": [
+      "Exterior foundation insulation",
+      "Drainage vertical",
+      "Isolant rigide peripherique"
+    ],
+    "excludes": [
+      "Open concrete slabs (Perron beton / dalle sur grade)",
+      "Unheated porches on piers or posts (Poteaux)",
+      "Exterior stairs (Escaliers exterieurs)",
+      "Roof overhangs and soffits (Debord de toit / Corniche)",
+      "Deck posts and cantilevered balconies without a full-height backfilled foundation wall"
+    ],
+    "takeoff_guidelines": [
+      "ALWAYS MEASURE OVERALL EXTERIOR BUILDING FOOTPRINT MASS: full overall building exterior dimensions enclosing all units combined extracted directly from drawing dimension callouts.",
+      "CALCULATE USING BELOW-GRADE DEPTH: vertical distance of foundation wall in contact with backfill.",
+      "REJECT INTERIOR ROOM AND UNIT PARTITIONS: strictly ignore individual interior room or unit partition dimensions. Never use single-room sizes as building perimeter.",
+      "EXCLUSION CHECKLIST: exclude open concrete slabs (Perron béton), unheated porches on posts/piers (Poteaux), exterior stairs, and deck posts outside the moisture envelope."
+    ]
+  }
+}
