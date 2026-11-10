@@ -16,7 +16,7 @@
     "takeoff_unit": "Pi Carree (sq.ft) / m2",
     "requires_perimeter": true,
     "requires_depth": true,
-    "vertical_dimension_target": "full_foundation_height",
+    "vertical_dimension_target": "below_grade_depth",
     "default_waste_percent": 10,
     "common_contexts": [
       "Damp-proofing",

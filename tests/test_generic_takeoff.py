@@ -631,6 +631,251 @@ class TestGenericTakeoff(unittest.TestCase):
         self.assertIn(f"{base_str} sq.ft", res["takeoff_quantity"])
         self.assertIn(f"{total_str} sq.ft", res["estimation_summary"]["total_measured_qty"])
 
+    def test_delta_ms_query_variations_and_takeoff(self):
+        """Verifies that all common query variations for DELTA-MS map to the correct
+        below-grade depth target and calculate exact surface area with 10% waste."""
+        service = TakeoffService()
+        queries = ["Delta MS membrane", "membrane delta ms", "installation Delta-MS", "Membrane de drainage DELTA-MS"]
+        
+        for q in queries:
+            std_name, _, syns, unit, _, _, _, req_p, req_d, params = service._get_search_terms(q)
+            self.assertTrue(req_p, f"Failed requires_perimeter for query: {q}")
+            self.assertTrue(req_d, f"Failed requires_depth for query: {q}")
+            self.assertEqual(params.get("vertical_dimension_target"), "below_grade_depth")
+            self.assertEqual(params.get("default_waste_percent"), 10)
+
+        # Validate math on sample blueprint dimensions: 164.04 ft (50 m) perimeter, 5.04 ft (1.537 m) below-grade depth
+        perim = {"value_ft": 164.04, "value_m": 50.0, "value_mm": 50000}
+        depth = {
+            "value_ft": 5.04, "value_m": 1.537, "value_mm": 1537,
+            "below_grade_depth": {"value_ft": 5.04, "value_m": 1.537, "value_mm": 1537}
+        }
+        res = service._validate_and_correct_takeoff(
+            takeoff_res={"material": "DELTA-MS"},
+            perimeter_data=perim,
+            depth_data=depth,
+            takeoff_unit="Pi Carrée (sq.ft) / m²",
+            requires_perimeter=True,
+            requires_depth=True,
+            std_name="Membrane de drainage DELTA-MS",
+            kb_params={"category": "Foundation Waterproofing", "vertical_dimension_target": "below_grade_depth", "default_waste_percent": 10}
+        )
+        # Base: 164.04 * 5.04 = 826.8 sq.ft (76.8 m²) -> "827 Pi Carrée"
+        # Total with 10% waste: 826.8 * 1.10 = 909.48 -> "909 Pi Carrée"
+        self.assertIn("827", res["takeoff_quantity"])
+        self.assertIn("909", res["estimation_summary"]["total_measured_qty"])
+        self.assertIn("Below-Grade Foundation Wall Depth", res["calculation_formula"])
+
+    def test_delta_flash_query_variations_and_takeoff(self):
+        """Verifies that all common query variations for DELTA-FLASH map to linear perimeter
+        takeoff without vertical depth and apply strictly 5% waste."""
+        service = TakeoffService()
+        queries = ["delta flash profile", "solin delta-flash", "bande de finition delta flash", "DELTA-FLASH"]
+
+        for q in queries:
+            std_name, _, syns, unit, _, _, _, req_p, req_d, params = service._get_search_terms(q)
+            self.assertTrue(req_p, f"Failed requires_perimeter for query: {q}")
+            self.assertFalse(req_d, f"Failed requires_depth for query: {q}")
+            self.assertEqual(params.get("vertical_dimension_target"), "none")
+            self.assertEqual(params.get("default_waste_percent"), 5)
+            self.assertIn("lin", unit.lower())
+
+        # Validate math on 203.0 ft (61.874 m) perimeter
+        perim = {"value_ft": 203.0, "value_m": 61.874, "value_mm": 61874}
+        res = service._validate_and_correct_takeoff(
+            takeoff_res={"material": "DELTA-FLASH"},
+            perimeter_data=perim,
+            depth_data={},
+            takeoff_unit="Pi Lin (lin.ft) / m",
+            requires_perimeter=True,
+            requires_depth=False,
+            std_name="Profile de finition Delta-Flash",
+            kb_params={"category": "Foundation Flashing", "vertical_dimension_target": "none", "default_waste_percent": 5}
+        )
+        # Base: 203 Pi Lin (61.9 m)
+        # Total with 5% waste: 203 * 1.05 = 213 Pi Lin (65.0 m)
+        self.assertIn("203 Pi Lin", res["takeoff_quantity"])
+        self.assertIn("213 Pi Lin", res["estimation_summary"]["total_measured_qty"])
+        self.assertNotIn("Depth", res["calculation_formula"])
+        self.assertNotIn("Height", res["calculation_formula"])
+
+    def test_fast_path_verified_takeoff_performance(self):
+        """Verifies that run_takeoff_for_material executes via the Fast Path in milliseconds
+        when perimeter and depth are pre-verified, with zero external LLM API dependency."""
+        service = TakeoffService()
+        import tempfile, time
+
+        pdf_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_one_page.pdf")
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            sample_json = {
+                "pages": [
+                    {
+                        "page_number": 1,
+                        "sheetNumber": "A-101",
+                        "title": "Foundation Plan",
+                        "drawingType": "Floor Plan",
+                        "measurements": [
+                            {"value": "15000", "unit": "mm", "associatedElement": "Foundation length"},
+                            {"value": "10000", "unit": "mm", "associatedElement": "Foundation width"}
+                        ]
+                    },
+                    {
+                        "page_number": 2,
+                        "sheetNumber": "A-501",
+                        "title": "Wall Section",
+                        "drawingType": "Wall Section",
+                        "measurements": [
+                            {"value": "2000", "unit": "mm", "associatedElement": "Mur de fondation sous sol fini"}
+                        ]
+                    }
+                ]
+            }
+
+            md_page = os.path.join(tmp_dir, "page_1.md")
+            with open(md_page, "w", encoding="utf-8") as f:
+                f.write("Detail 4: Installation de membrane de drainage DELTA-MS et solin DELTA-FLASH.")
+
+            t0 = time.time()
+            res = service.run_takeoff_for_material(
+                pdf_path=pdf_path,
+                scratch_dir=tmp_dir,
+                page_num=1,
+                page_md="",
+                page_json=sample_json["pages"][0],
+                full_json_data=sample_json,
+                material_query="Delta-MS",
+            )
+            elapsed = time.time() - t0
+
+            # Verified Fast-Path turnaround must be under 0.5 seconds
+            self.assertLess(elapsed, 0.5, f"Fast path took {elapsed:.3f}s (expected < 0.5s)")
+            self.assertIn("DELTA-MS", res["estimation_summary"]["material_name"])
+            self.assertIn("Pi Carrée", res["takeoff_quantity"])
+            self.assertEqual(len(res["measurement_sources"]), 2)
+            self.assertEqual(res["measurement_sources"][0]["sheet_number"], "A-101")
+            self.assertEqual(res["measurement_sources"][1]["sheet_number"], "A-501")
+
+    def test_project_2343_ground_truth_reconciliation(self):
+        """Reconciles Project 2343 blueprint dimensions against the estimator Excel sheet:
+        - Perimeter: 190 ft (Core 13513mm x 12294mm = 169.34 ft + Socle de béton 6373mm = 20.91 ft)
+        - Depth: 5.5 ft (Elevation callout ±1668mm)
+        - DELTA-MS: 1,045 Pi Carrée (Net), 1,150 Pi Carrée (10% waste)
+        - DELTA-FLASH: 190 Pi Lin (Net), 200 Pi Lin (5% waste)
+        - RC.30: 1,045 Pi Carrée (Net), 1,150 Pi Carrée (10% waste)
+        """
+        service = TakeoffService()
+
+        # Build blueprint data simulating Project 2343
+        full_json = {
+            "pages": [
+                {
+                    "page_number": 3,
+                    "drawingType": "Floor Plan",
+                    "title": "Ground Floor Plan",
+                    "sheetNumber": "A-202"
+                },
+                {
+                    "page_number": 6,
+                    "drawingType": "Elevation",
+                    "title": "Elevations",
+                    "sheetNumber": "A-204"
+                }
+            ]
+        }
+
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Plan page with core dimensions and attached concrete base (Socle de béton)
+            p3_md = os.path.join(tmp_dir, "page_3.md")
+            with open(p3_md, "w", encoding="utf-8") as f:
+                f.write(
+                    "PLAN DU REZ-DE-CHAUSSÉE\n"
+                    "±17151 mm\n±15939 mm\n"
+                    "±13513 mm\n±12294 mm\n"
+                    "SOCLE DE BÉTON E.E.\n±6373 mm\n"
+                )
+
+            # Elevation page with authoritative structural foundation callout
+            p6_md = os.path.join(tmp_dir, "page_6.md")
+            with open(p6_md, "w", encoding="utf-8") as f:
+                f.write(
+                    "ÉLÉVATION OUEST - DÉMOLITION\n"
+                    "±4747 mm\n"
+                    "±1668 mm TYP.\n"
+                    "FONDATION APPARENTE\n"
+                )
+
+            p_data, d_data = service._resolve_building_dimensions(
+                api_key="mock",
+                pdf_path="",
+                scratch_dir=tmp_dir,
+                full_json_data=full_json,
+                metadata_json_path=None,
+                requires_perimeter=True,
+                requires_depth=True
+            )
+
+            # Verify resolved perimeter and depth match estimator ground truth
+            self.assertEqual(p_data["value_ft"], 190.0)
+            self.assertEqual(d_data["below_grade_depth"]["value_ft"], 5.5)
+
+            # 1. Delta-MS Takeoff Check
+            res_ms = service._validate_and_correct_takeoff(
+                takeoff_res={"material": "Membrane de drainage DELTA-MS", "measurements": []},
+                perimeter_data=p_data,
+                depth_data=d_data,
+                takeoff_unit="Pi Carrée (sq.ft) / m²",
+                requires_perimeter=True,
+                requires_depth=True,
+                std_name="Membrane de drainage DELTA-MS",
+                kb_params={"category": "Murs Fondation (vertical)", "default_waste_percent": 10, "vertical_dimension_target": "below_grade_depth"},
+                full_json_data=full_json,
+                page_num=12,
+                sheet_number="A-501",
+                sheet_title="Wall Section",
+                drawing_type="Section"
+            )
+            self.assertEqual(res_ms["estimation_summary"]["info_qty"], "1 045 Pi Carrée (96.7 m²)")
+            self.assertEqual(res_ms["estimation_summary"]["total_measured_qty"], "1 150 Pi Carrée (106.4 m²)")
+
+            # 2. Delta-Flash Takeoff Check
+            res_flash = service._validate_and_correct_takeoff(
+                takeoff_res={"material": "Profile de finition Delta-Flash", "measurements": []},
+                perimeter_data=p_data,
+                depth_data=d_data,
+                takeoff_unit="Pi Lin (lin.ft) / m",
+                requires_perimeter=True,
+                requires_depth=False,
+                std_name="Profile de finition Delta-Flash",
+                kb_params={"category": "Murs Fondation (vertical)", "default_waste_percent": 5, "vertical_dimension_target": "none"},
+                full_json_data=full_json,
+                page_num=12,
+                sheet_number="A-501",
+                sheet_title="Wall Section",
+                drawing_type="Section"
+            )
+            self.assertEqual(res_flash["estimation_summary"]["info_qty"], "190 Pi Lin (58.0 m)")
+            self.assertEqual(res_flash["estimation_summary"]["total_measured_qty"], "200 Pi Lin (60.9 m)")
+
+            # 3. RC.30 Hydrofuge Takeoff Check
+            res_rc30 = service._validate_and_correct_takeoff(
+                takeoff_res={"material": "Revetement RC.30 (10 Mils)", "measurements": []},
+                perimeter_data=p_data,
+                depth_data=d_data,
+                takeoff_unit="Pi Carrée (sq.ft) / m²",
+                requires_perimeter=True,
+                requires_depth=True,
+                std_name="Revetement RC.30 (10 Mils)",
+                kb_params={"category": "Murs Fondation (vertical) / Hydrofuge", "default_waste_percent": 10, "vertical_dimension_target": "below_grade_depth"},
+                full_json_data=full_json,
+                page_num=12,
+                sheet_number="A-501",
+                sheet_title="Wall Section",
+                drawing_type="Section"
+            )
+            self.assertEqual(res_rc30["estimation_summary"]["info_qty"], "1 045 Pi Carrée (96.7 m²)")
+            self.assertEqual(res_rc30["estimation_summary"]["total_measured_qty"], "1 150 Pi Carrée (106.4 m²)")
+
 if __name__ == "__main__":
     unittest.main()
 
