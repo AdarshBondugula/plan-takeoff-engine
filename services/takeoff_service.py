@@ -1218,7 +1218,22 @@ RESPOND WITH VALID JSON ONLY matching this structure:
         metadata_json_path: str,
         requires_perimeter: bool = False,
         requires_depth: bool = False,
+        target_dim_key: str = "below_grade_depth",
     ) -> tuple:
+        cache_file = os.path.join(scratch_dir, "takeoff_dimensions_cache.json") if scratch_dir else None
+        if cache_file and os.path.exists(cache_file):
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                cached_p = cached.get("perimeter")
+                cached_d = cached.get("depth")
+                p_ok = (not requires_perimeter) or (cached_p and cached_p.get("value_mm"))
+                d_ok = (not requires_depth) or (cached_d and cached_d.get("value_mm"))
+                if p_ok and d_ok:
+                    return cached_p or {}, cached_d or {}
+            except Exception:
+                pass
+
         perimeter_data = {}
         depth_data = {}
         updated = False
@@ -2065,7 +2080,16 @@ RESPOND WITH VALID JSON ONLY matching this structure:
                     print(f"[TakeoffService] Foundation depth resolved from drawing callout: {val_raw} -> {d_ft} ft ({d_m} m)")
 
             # D. VISION FALLBACK (Only executed if text scanning does not yield parameters):
-            if (not below_grade_data or not full_height_data or not drain_girth_data) and candidate_section_pages and api_key and pdf_path:
+            needs_vision_depth = False
+            if requires_depth:
+                if target_dim_key == "geotextile_drain_girth":
+                    needs_vision_depth = not drain_girth_data
+                elif target_dim_key == "full_foundation_height":
+                    needs_vision_depth = not full_height_data
+                else:
+                    needs_vision_depth = not below_grade_data and not full_height_data
+
+            if needs_vision_depth and candidate_section_pages and api_key and pdf_path:
                 for p in candidate_section_pages:
                     p_num = p.get("page_number")
                     try:
@@ -2175,6 +2199,14 @@ RESPOND WITH VALID JSON ONLY matching this structure:
                     json.dump(full_json_data, f, indent=2, ensure_ascii=False)
             except Exception as e:
                 print(f"[TakeoffService] Failed to save resolved dimensions: {e}")
+
+        if cache_file and (perimeter_data or depth_data):
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump({"perimeter": perimeter_data, "depth": depth_data}, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f"[TakeoffService] Failed to save takeoff dimensions cache: {e}")
+
         return perimeter_data, depth_data
     def resolve_document_dimensions(self, json_data: dict) -> tuple:
         # Wrapper around _resolve_building_dimensions for unit compatibility
@@ -2581,7 +2613,6 @@ RESPOND WITH VALID JSON ONLY matching this structure:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY is not configured in environment variables.")
-        img_data, img_mime = self._render_page_image(pdf_path, scratch_dir, page_num)
         project_id = None
         if full_json_data and "pages" in full_json_data:
             for p in full_json_data.get("pages", []):
@@ -2590,6 +2621,7 @@ RESPOND WITH VALID JSON ONLY matching this structure:
                     project_id = str(meta.get("projectID")).strip()
                     break
         std_name, kb_desc, synonyms, takeoff_unit, common_contexts, properties, guidelines, requires_perimeter, requires_depth, kb_params = self._get_search_terms(material_query, project_id)
+        target_dim_key = (kb_params or {}).get("vertical_dimension_target", "below_grade_depth" if requires_depth else "none")
         perimeter_data, depth_data = self._resolve_building_dimensions(
             api_key=api_key,
             pdf_path=pdf_path,
@@ -2598,6 +2630,7 @@ RESPOND WITH VALID JSON ONLY matching this structure:
             metadata_json_path=metadata_json_path,
             requires_perimeter=requires_perimeter,
             requires_depth=requires_depth,
+            target_dim_key=target_dim_key,
         )
         doc_sheets = []
         doc_measurements = []
@@ -2778,6 +2811,7 @@ RESPOND WITH VALID JSON ONLY matching this structure:
         model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         print(f"[TakeoffService] Prompt: {prompt_with_md[:500]}...")
+        img_data, img_mime = self._render_page_image(pdf_path, scratch_dir, page_num)
         payload = {
             "contents": [{"parts": [
                 {"text": prompt_with_md},

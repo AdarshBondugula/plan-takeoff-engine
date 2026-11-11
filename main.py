@@ -364,9 +364,6 @@ async def run_takeoff(req: TakeoffRequest):
     try:
         import copy
         cleaned_json = copy.deepcopy(json_data)
-        for p in cleaned_json.get("pages", []):
-            p.pop("buildingPerimeter", None)
-            p.pop("foundationWallDepth", None)
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(cleaned_json, f, indent=2, ensure_ascii=False)
         print(f"[Main] Saved updated takeoff dimensions to output: {json_path}")
